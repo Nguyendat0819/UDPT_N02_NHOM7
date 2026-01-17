@@ -57,7 +57,7 @@ public class UserService {
                 Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
                 // Gán đường dẫn web (/uploads/...) vào database
-                user.setAvatarUrl("/uploads/" + fileName);
+                user.setAvatarUrl( fileName);
 
             } catch (IOException e) {
                 e.printStackTrace();

@@ -32,7 +32,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable()) // Tắt CSRF để Postman/Form gửi được dữ liệu
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/register", "/css/**", "/js/**", "/uploads/**").permitAll() // Cho phép truy cập tự do
+                .requestMatchers("/register", "/css/**", "/js/**", "/uploads/**","/ws/**").permitAll() // Cho phép truy cập tự do
                 .anyRequest().authenticated() // Các trang khác phải login
             )
 
