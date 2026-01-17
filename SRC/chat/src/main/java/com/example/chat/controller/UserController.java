@@ -41,4 +41,16 @@
                 return "redirect:/register?error=true";
             }
         }
+
+        @GetMapping("/login")
+        public String ShowLogin(){
+            return "login";
+        }
+
+        // @PostMapping("/login")
+        // public String handleLogin()
+        @GetMapping("/home")
+        public String ShowHome(){
+            return "home";
+        }
 }

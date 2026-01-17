@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng nhập</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+</head>
+<body class="bg-light d-flex align-items-center justify-content-center" style="height: 100vh;">
+
+    <div class="card p-4 shadow" style="width: 400px;">
+        <h3 class="text-center mb-4">Đăng Nhập</h3>
+
+        <div th:if="${param.error}" class="alert alert-danger text-center">
+            Email hoặc mật khẩu không đúng!
+        </div>
+        <div th:if="${param.logout}" class="alert alert-success text-center">
+            Đã đăng xuất thành công.
+        </div>
+        <div th:if="${param.success}" class="alert alert-success text-center">
+            Đăng ký thành công! Hãy đăng nhập.
+        </div>
+
+        <form th:action="@{/login}" method="post">
+            <div class="mb-3">
+                <label>Email:</label>
+                <input type="email" name="email" class="form-control" required placeholder="Nhập email...">
+            </div>
+
+            <div class="mb-3">
+                <label>Mật khẩu:</label>
+                <div class="input-group">
+                    <input type="password" name="password" id="password" class="form-control" required placeholder="Nhập mật khẩu...">
+                    <span class="input-group-text", onclick="togglePassword('password',this)">
+                        <i class="fa-solid fa-eye"></i>
+                    </span>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Đăng Nhập</button>
+        </form>
+
+        <div class="text-center mt-3">
+            <a href="/register">Chưa có tài khoản? Đăng ký ngay</a>
+        </div>
+    </div>
+<Script>
+    setTimeout(function(){
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert){
+            alert.style.transition = "opacity 0.5s ease-out";
+            alert.style.opacity = 0;
+            setTimeout(function(){
+                alert.remove();
+            },500);
+          
+        });
+    },3000);
+
+    function togglePassword(inputId,IconEl){
+        var input = document.getElementById(inputId);
+        var icon = IconEl.querySelector('i');
+            if(input.type === "password"){
+                input.type = "text";
+                icon.classList.replace("fa-eye","fa-eye-slash");
+            }else{
+                input.type = "password";
+                icon.classList.replace("fa-eye-slash","fa-eye");
+            }
+    }
+
+</Script>
+</body>
+</html>
