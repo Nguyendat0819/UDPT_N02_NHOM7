@@ -25,17 +25,17 @@ public class DatabaseTestRunner implements CommandLineRunner {
         try {
             // 1. Test PostgreSQL
             long userCount = userRepository.count();
-            System.out.println("✅ Kết nối PostgreSQL thành công! Số lượng User: " + userCount);
+            System.out.println(" Kết nối PostgreSQL thành công! Số lượng User: " + userCount);
         } catch (Exception e) {
-            System.err.println("❌ Lỗi kết nối PostgreSQL: " + e.getMessage());
+            System.err.println(" Lỗi kết nối PostgreSQL: " + e.getMessage());
         }
 
         try {
             // 2. Test MongoDB
             long messageCount = messageRepository.count();
-            System.out.println("✅ Kết nối MongoDB thành công! Số lượng Tin nhắn: " + messageCount);
+            System.out.println(" Kết nối MongoDB thành công! Số lượng Tin nhắn: " + messageCount);
         } catch (Exception e) {
-            System.err.println("❌ Lỗi kết nối MongoDB: " + e.getMessage());
+            System.err.println(" Lỗi kết nối MongoDB: " + e.getMessage());
         }
         
         System.out.println("===============================================");

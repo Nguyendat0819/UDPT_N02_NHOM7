@@ -65,9 +65,9 @@
             // 2. Tìm user trong database
             User user = userRepository.findByEmail(email);
 
-            // --- QUAN TRỌNG: Kiểm tra nếu database bị xóa mất user này ---
+           
             if (user == null) {
-                return "redirect:/logout"; // Đá văng ra bắt đăng nhập lại
+                return "redirect:/logout"; 
             }
             // ------------------------------------------------------------
 
@@ -85,7 +85,7 @@
             return friendshipService.getFriendsList(principal.getName());
         }
 
-        // 2. API Thêm bạn (QUAN TRỌNG: Đây là cái bạn đang thiếu)
+        // 2. API Thêm bạn 
         @PostMapping("/api/friends/add")
         @ResponseBody
         public String addFriend(@RequestParam String email, Principal principal) {
