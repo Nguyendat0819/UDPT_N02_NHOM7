@@ -1,12 +1,15 @@
 package com.example.chat.model;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Column;
 
 import lombok.Data;
-
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
@@ -17,6 +20,7 @@ import java.util.UUID;
 public class User {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     private String email;
@@ -30,11 +34,11 @@ public class User {
     private java.time.LocalDateTime createdAt; // Khớp với created_at trong pgAdmin
 
     // Tự động chạy trước khi lưu vào PostgreSQL
-    @jakarta.persistence.PrePersist
+    @Version
+    private Long version;
+    // @jakarta.persistence.PrePersist
+    @PrePersist
     protected void onCreate() {
-        if (this.id == null) {
-            this.id = java.util.UUID.randomUUID(); // Tự sinh ID UUID
-        }
         // Sửa lại dòng lỗi cú pháp này
         if (this.createdAt == null) { 
             this.createdAt = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));

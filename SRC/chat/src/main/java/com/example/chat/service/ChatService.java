@@ -6,6 +6,7 @@ import com.example.chat.model.User;
 import com.example.chat.repository.FriendshipRepository;
 import com.example.chat.repository.MessageRepository;
 import com.example.chat.repository.UserRepository;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +26,9 @@ public class ChatService {
 
     @Autowired
     private FriendshipRepository friendshipRepository;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
     /**
      * Xử lý logic lưu tin nhắn mới
      */
@@ -53,7 +57,12 @@ public class ChatService {
             message.setCreatedAt(LocalDateTime.now());
 
             // 3. Lưu xuống MongoDB và trả về kết quả
-            return messageRepository.save(message);
+            // return messageRepository.save(message);
+            rabbitTemplate.convertAndSend("chat_queue", message); 
+            
+            System.out.println("🚀 [Producer] Đã đẩy tin nhắn vào Queue cho: " + recipient.getUsername());
+
+            return message; // Trả về object tạm thời cho Controller (chưa có ID từ Mongo)
         }
         return null; // Hoặc ném Exception tùy bạn
     }
