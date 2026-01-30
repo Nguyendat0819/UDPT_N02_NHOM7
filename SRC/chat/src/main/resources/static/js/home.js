@@ -86,6 +86,8 @@
 
         // 5. TẢI LỊCH S
         function loadHistory(recipientEmail) {
+            currentActiveRecipient = recipientEmail;
+            currentRecipientEmail = recipientEmail;
             var historyDiv = document.getElementById("chat-history");
             
             // 1. Reset trạng thái
@@ -112,7 +114,10 @@
 
             fetch(url).then(res => res.json()).then(messages => {
                 historyDiv.innerHTML = ''; 
-
+                if (recipientEmail !== currentActiveRecipient) {
+                    console.log("🚫 Đã chuyển người chat, hủy hiển thị tin cũ của: " + recipientEmail);
+                    return; 
+                }
                 // 4. Render tin nhắn (Dùng cách tối ưu của hàm 2)
                 var tempHtml = '';
                 messages.forEach(msg => {
@@ -143,18 +148,26 @@
         // 6. GỬI TIN NHẮN (Optimistic Update)
         function sendMessage() {
             var content = document.getElementById("messageContent").value.trim();
-            var recipient = document.getElementById("recipientEmail").value;
+            // var recipient = document.getElementById("recipientEmail").value;
+            //  DÙNG DÒNG NÀY (Lấy từ biến toàn cục chuẩn xác 100%):
+            var recipient = currentActiveRecipient;
             if(content && recipient) {
                 // Gửi Server
                 stompClient.send("/app/chat", {}, JSON.stringify({'recipientEmail': recipient, 'content': content}));
                 
                 // Hiện ngay lập tức cho mình xem
                 var now = new Date();
-                displayMessage({ senderId: myUUID, content: content, createdAt: now });
+                displayMessage({ 
+                    senderId: myUUID, // Hoặc myUUID tùy code bạn
+                    content: content, 
+                    createdAt: now 
+                });
                 
                 document.getElementById("messageContent").value = '';
                 document.getElementById("messageContent").focus();
                 scrollToBottom();
+            }else {
+                console.error("Lỗi: Chưa chọn người nhận hoặc tin nhắn rỗng!");
             }
         }
 
@@ -327,7 +340,7 @@
         var currentArchivePage = 0;
         var isLoadingArchive = false;
         var hasMoreArchive = true;
-
+        var currentActiveRecipient = null;
         // --- 1. TẢI LỊCH SỬ (Mới vào) ---
         
         function loadMoreArchives(recipientEmail) {
@@ -347,6 +360,9 @@
             var url = `/api/messages/archive?senderId=${senderEmail}&recipientId=${recipientEmail}&page=${currentArchivePage}`;
 
             fetch(url).then(res => res.json()).then(messages => {
+                if (recipientEmail !== currentActiveRecipient) {
+                    return; // Hủy nếu sai người
+                }
                     // Xóa loading
                 var loaderEl = document.getElementById("archive-loader");
                 if(loaderEl) loaderEl.remove();
@@ -382,7 +398,7 @@
                         loadMoreArchives(recipientEmail);
                     }
 
-                    if (messages.length < 20) {
+                    if (messages.length < 15) {
                         hasMoreArchive = false;
                         var endMsg = document.createElement("div");
                         endMsg.className = "text-center text-muted small my-3";

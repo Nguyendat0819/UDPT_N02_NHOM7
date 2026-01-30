@@ -23,6 +23,8 @@ public class ChatService {
     @Autowired
     private UserRepository userRepository;
     @Autowired
+    private UserService userService;
+    @Autowired
     private MessageRepository messageRepository;
     @Autowired
     private FriendshipRepository friendshipRepository;
@@ -68,12 +70,9 @@ public class ChatService {
      * Helper: Lấy ConversationId từ 2 Email
      */
     private String getConversationIdByEmails(String email1, String email2) {
-        User user1 = userRepository.findByEmail(email1)
-                .orElseThrow(() -> new RuntimeException("User not found: " + email1));
-        User user2 = userRepository.findByEmail(email2)
-                .orElseThrow(() -> new RuntimeException("User not found: " + email2));
-        
-        return generateConversationId(user1.getId(), user2.getId());
+        UUID id1 = userService.findIdByEmail(email1); // Uses Redis Cache
+        UUID id2 = userService.findIdByEmail(email2); // Uses Redis Cache
+        return generateConversationId(id1, id2);
     }
 
     // Logic tạo ID hội thoại (Giữ nguyên của bạn)
