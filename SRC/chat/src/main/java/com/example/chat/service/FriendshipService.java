@@ -23,7 +23,7 @@ public class FriendshipService {
 
     // 1. Logic lấy danh sách bạn bè (Đã tối ưu bằng @Query)
     public List<User> getFriendsList(String email) {
-        User currentUser = userRepository.findByEmail(email);
+        User currentUser = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Email not found"));
         
         // Gọi hàm tìm kiếm nhanh từ Repository
         List<Friendship> friendships = friendshipRepository.findFriends(currentUser.getId());
@@ -38,8 +38,8 @@ public class FriendshipService {
 
     // 2. Logic thêm bạn mới (Có kiểm tra kỹ hơn)
     public String addFriend(String currentEmail, String targetEmail) {
-        User currentUser = userRepository.findByEmail(currentEmail);
-        User targetUser = userRepository.findByEmail(targetEmail);
+        User currentUser = userRepository.findByEmail(currentEmail).orElseThrow(() -> new RuntimeException("Email not found"));
+        User targetUser = userRepository.findByEmail(targetEmail).orElseThrow(() -> new RuntimeException("Email not found"));
 
         if (targetUser == null) return "Email không tồn tại!";
         if (currentUser.getId().equals(targetUser.getId())) return "Không thể tự kết bạn!";
@@ -69,8 +69,8 @@ public class FriendshipService {
 
     // 3. Logic chặn người dùng
     public String blockUser(String currentEmail, String targetEmail) {
-        User currentUser = userRepository.findByEmail(currentEmail);
-        User targetUser = userRepository.findByEmail(targetEmail);
+        User currentUser = userRepository.findByEmail(currentEmail).orElseThrow(() -> new RuntimeException("Email not found"));
+        User targetUser = userRepository.findByEmail(targetEmail).orElseThrow(() -> new RuntimeException("Email not found"));
 
         if (targetUser == null) return "User not found";
 

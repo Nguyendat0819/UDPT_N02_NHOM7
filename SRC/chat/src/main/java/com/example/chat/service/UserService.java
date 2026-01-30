@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
-
 @Service
 public class UserService {
 
@@ -27,7 +26,7 @@ public class UserService {
     public void registerUser(String username, String password, String email, MultipartFile file) throws Exception {
         
         // 1. Kiểm tra Email đã tồn tại chưa (Logic nghiệp vụ)
-        if (userRepository.findByEmail(email) != null) {
+        if (userRepository.findByEmail(email).isPresent()) {
             throw new Exception("duplicate_email"); // Ném lỗi để Controller bắt
         }
 
@@ -68,4 +67,12 @@ public class UserService {
         // 4. Lưu User vào Database
         userRepository.save(user);
     }
+
+
+    public UUID findIdByEmail(String email) {
+    // Logic: Select id from users where email = ?
+    User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+    return user.getId(); // Trả về UUID thực sự
+}
 }

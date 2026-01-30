@@ -1,16 +1,18 @@
 package com.example.chat.service;
-
-import com.example.chat.model.ChatRequest;
+import com.example.chat.model.ArchivedMessage;
 import com.example.chat.model.Message;
 import com.example.chat.model.User;
+import com.example.chat.repository.ArchivedMessageRepository;
 import com.example.chat.repository.FriendshipRepository;
 import com.example.chat.repository.MessageRepository;
 import com.example.chat.repository.UserRepository;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -20,74 +22,73 @@ public class ChatService {
 
     @Autowired
     private UserRepository userRepository;
-
     @Autowired
     private MessageRepository messageRepository;
-
     @Autowired
     private FriendshipRepository friendshipRepository;
-
     @Autowired
-    private RabbitTemplate rabbitTemplate;
+    private ArchivedMessageRepository archivedMessageRepository;
+
     /**
-     * Xử lý logic lưu tin nhắn mới
+     * ✅ 1. LẤY TIN NHẮN GẦN ĐÂY (Mặc định khi mở chat)
+     * Chỉ lấy từ bảng messages (chứa 7 ngày gần nhất)
      */
-    public Message saveMessage(String senderEmail, ChatRequest request) {
-        User sender = userRepository.findByEmail(senderEmail);
-        User recipient = userRepository.findByEmail(request.getRecipientEmail());
-
-        if (sender != null && recipient != null) {
-
-            boolean isBlocked = friendshipRepository.isSenderBlockedByRecipient(recipient.getId(), sender.getId());
-            
-            if (isBlocked) {
-                // Tùy chọn: Có thể return null để không lưu tin nhắn
-                // Hoặc ném lỗi để Frontend biết
-                System.out.println("Tin nhắn bị chặn do User " + recipient.getUsername() + " đã block " + sender.getUsername());
-                return null; 
-            }
-            // 1. Tạo Conversation ID chuẩn
-            String conversationId = generateConversationId(sender.getId(), recipient.getId());
-
-            // 2. Tạo đối tượng Message
-            Message message = new Message();
-            message.setConversationId(conversationId);
-            message.setSenderId(sender.getId());
-            message.setContent(request.getContent());
-            message.setCreatedAt(LocalDateTime.now());
-
-            // 3. Lưu xuống MongoDB và trả về kết quả
-            // return messageRepository.save(message);
-            rabbitTemplate.convertAndSend("chat_queue", message); 
-            
-            System.out.println("🚀 [Producer] Đã đẩy tin nhắn vào Queue cho: " + recipient.getUsername());
-
-            return message; // Trả về object tạm thời cho Controller (chưa có ID từ Mongo)
-        }
-        return null; // Hoặc ném Exception tùy bạn
+    public List<Message> findRecentMessages(String senderEmail, String recipientEmail) {
+        String conversationId = getConversationIdByEmails(senderEmail, recipientEmail);
+        
+        // Lấy tất cả tin trong bảng Recent (Vì bảng này ít, chỉ 7 ngày nên findAll ok)
+        return messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
     }
 
     /**
-     * Xử lý logic lấy lịch sử chat
+     * ✅ 2. LẤY TIN NHẮN CŨ (Archive) - CÓ PHÂN TRANG
+     * Hàm này dùng cho tính năng "Cuộn lên xem thêm"
+     * @param page: Số trang (0, 1, 2...)
      */
-    public List<Message> getChatHistory(String senderEmail, String recipientEmail) {
-        User sender = userRepository.findByEmail(senderEmail);
-        User recipient = userRepository.findByEmail(recipientEmail);
+    public List<ArchivedMessage> findArchivedMessages(String senderEmail, String recipientEmail, int page) {
+        String conversationId = getConversationIdByEmails(senderEmail, recipientEmail);
 
-        if (sender != null && recipient != null) {
-            String conversationId = generateConversationId(sender.getId(), recipient.getId());
-            // Gọi hàm repository bạn vừa viết
-            return messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
-        }
-        return Collections.emptyList();
+        // Quy định: Mỗi lần chỉ lấy 20 tin
+        int pageSize = 20;
+        Pageable pageable = PageRequest.of(page, pageSize);
+
+        // 🔥 QUAN TRỌNG: Lấy giảm dần (DESC) để lấy những tin "mới nhất trong quá khứ" trước
+        Page<ArchivedMessage> resultPage = archivedMessageRepository
+                .findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
+
+        List<ArchivedMessage> messages = new ArrayList<>(resultPage.getContent());
+
+        // Đảo ngược lại danh sách (để hiển thị đúng thứ tự thời gian cũ -> mới trên UI)
+        Collections.reverse(messages);
+
+        return messages;
     }
 
-    // Logic private: Chỉ service này cần biết cách tạo ID
+    /**
+     * Helper: Lấy ConversationId từ 2 Email
+     */
+    private String getConversationIdByEmails(String email1, String email2) {
+        User user1 = userRepository.findByEmail(email1)
+                .orElseThrow(() -> new RuntimeException("User not found: " + email1));
+        User user2 = userRepository.findByEmail(email2)
+                .orElseThrow(() -> new RuntimeException("User not found: " + email2));
+        
+        return generateConversationId(user1.getId(), user2.getId());
+    }
+
+    // Logic tạo ID hội thoại (Giữ nguyên của bạn)
     private String generateConversationId(UUID userId1, UUID userId2) {
-        if (userId1.compareTo(userId2) < 0) {
-            return userId1 + "_" + userId2;
-        } else {
-            return userId2 + "_" + userId1;
+        return (userId1.compareTo(userId2) < 0) 
+                ? userId1.toString() + "_" + userId2.toString() 
+                : userId2.toString() + "_" + userId1.toString();
+    }
+    
+    // Helper check block (Giữ nguyên của bạn)
+    public boolean isUserBlocked(UUID senderId, UUID recipientId) {
+        try {
+             return friendshipRepository.isSenderBlockedByRecipient(recipientId, senderId);
+        } catch (Exception e) {
+            return false;
         }
     }
 }

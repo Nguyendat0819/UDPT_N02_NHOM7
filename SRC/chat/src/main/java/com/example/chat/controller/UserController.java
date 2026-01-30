@@ -46,6 +46,7 @@
                 return "redirect:/login";
             }catch (Exception e) {
                 // Xử lý lỗi (ví dụ: email trùng)
+                e.printStackTrace();
                 return "redirect:/register?error=true";
             }
         }
@@ -55,15 +56,14 @@
             return "login";
         }
 
-        // @PostMapping("/login")
-        // public String handleLogin()
         @GetMapping("/home")
         public String ShowHome(Model model, Principal principal) {
             // 1. Lấy email từ session đăng nhập
             String email = principal.getName();
             
             // 2. Tìm user trong database
-            User user = userRepository.findByEmail(email);
+            User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));;
 
            
             if (user == null) {
@@ -77,7 +77,6 @@
             return "home";
         }
 
-            // 3. API Chặn bạn bè
         // 1. API Lấy danh sách bạn bè
         @GetMapping("/api/users")
         @ResponseBody
