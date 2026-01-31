@@ -77,6 +77,32 @@ services:
       - chat-network
     restart: always
 
+  # --- 5. BACKEND JAVA (Chat App) ---
+  chat:
+    build: .                      # Build từ code tại thư mục hiện tại
+    container_name: chat
+    ports:
+      - "8080:8080"
+    environment:
+      # Cấu hình kết nối Database (Dùng tên service, KHÔNG dùng localhost)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/userChat
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: "123"
+      # Kết nối MongoDB
+      SPRING_DATA_MONGODB_URI: mongodb://host.docker.internal:27017/personChat
+      # Kết nối Redis
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+    networks:
+      - chat-network
+    depends_on:
+      - postgres-db
+      - mongo-router
+      - redis
+    restart: always
+
+
+
   # ==========================================
   # === HỆ THỐNG MONGODB (GIỮ NGUYÊN) ===
   # ==========================================
