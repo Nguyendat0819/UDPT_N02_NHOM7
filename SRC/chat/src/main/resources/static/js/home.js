@@ -1,7 +1,7 @@
         var stompClient = null;
         var myUUID = document.getElementById("currentUserId").value; 
         var currentRecipientEmail = null; 
-
+        var currentRecipientId = null;
         // 1. XỬ LÝ AVATAR
         function getAvatarHtml(user) {
             if (user.avatarUrl && user.avatarUrl.trim() !== "") {
@@ -19,19 +19,22 @@
             stompClient.debug = null; 
 
             stompClient.connect({}, function (frame) {
-                console.log('✅ Đã kết nối WebSocket!');
+                console.log(' Đã kết nối WebSocket!');
                 
                 // Đăng ký nhận tin
                 stompClient.subscribe('/user/queue/messages', function (messageOutput) {
                     var message = JSON.parse(messageOutput.body);
-                    console.log("📩 Nhận được tin nhắn từ Server:", message);
+                    console.log(" Nhận được tin nhắn từ Server:", message);
 
                     // LOGIC ĐƠN GIẢN HÓA:
                     // 1. Nếu là tin của mình gửi -> Bỏ qua (vì đã hiện rồi)
                     if (String(message.senderId) === String(myUUID)) {
                         return;
                     }
-
+                    if (currentRecipientId && String(message.senderId) !== String(currentRecipientId)) {
+                        console.log(" Chặn tin từ ID: " + message.senderId + " (Đang chat với ID: " + currentRecipientId + ")");
+                        return;
+                    }
                     // 2. Nếu là tin người khác -> HIỆN LUÔN (Không cần check ID gì cả để test)
                     displayMessage(message);
                     
@@ -46,6 +49,8 @@
             fetch('/api/users').then(res => res.json()).then(users => {
                 var list = document.getElementById("userList");
                 list.innerHTML = "";
+                //  Lấy ID người chat cũ từ bộ nhớ
+                var lastChatId = localStorage.getItem("lastChatUserId");
                 users.forEach(user => {
                     var li = document.createElement("li");
                     li.className = "user-item";
@@ -58,8 +63,15 @@
                     `;
                     li.onclick = function() { selectUser(user, li); };
                     list.appendChild(li);
-                });
-            });
+                    //  KIỂM TRA: Nếu user này trùng với người chat lần trước -> Tự động Click chọn luôn
+                    // (Chuyển về String để so sánh cho chắc)
+                    if (lastChatId && String(user.id) === String(lastChatId)) {
+                        console.log("🔄 Khôi phục cuộc trò chuyện với: " + user.username);
+                        // Tự động kích hoạt hàm selectUser cho người này
+                        selectUser(user, li); 
+                    }
+                        });
+                    });
         }
 
         // 4. CHỌN NGƯỜI ĐỂ CHAT
@@ -77,7 +89,10 @@
 
             currentRecipientEmail = user.email;
             document.getElementById("recipientEmail").value = user.email;
-
+            // Lấy userID hiện tại
+            currentRecipientId = user.id;
+            // THÊM DÒNG NÀY: Lưu ID vào bộ nhớ trình duyệt (localStorage)
+            localStorage.setItem("lastChatUserId", user.id);
             document.getElementById("messageContent").disabled = false;
             document.getElementById("sendBtn").disabled = false;
 
@@ -422,7 +437,7 @@
             var alignClass = isMe ? "my-message" : "other-message";
             var containerClass = isMe ? "justify-content-end" : "justify-content-start";
             
-            // ✅ SỬA QUAN TRỌNG: Dùng formatTime để giờ đẹp (09:05)
+            //  SỬA QUAN TRỌNG: Dùng formatTime để giờ đẹp (09:05)
             var timeStr = formatTime(msg.createdAt);
 
             return `
