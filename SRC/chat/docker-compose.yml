@@ -107,8 +107,8 @@ services:
   # === HỆ THỐNG MONGODB (GIỮ NGUYÊN) ===
   # ==========================================
   mongo-config:
-    image: mongo:latest
-    container_name: mongo-config
+    image: mongo:7.0
+    container_name: mongo-config #Quản lý	Lưu cấu hình
     command: mongod --configsvr --replSet rs-config --port 27019 --bind_ip_all
     ports:
       - "27019:27019"
@@ -117,8 +117,8 @@ services:
     networks:
       - chat-network
 
-  mongo-shard1-a:
-    image: mongo:latest
+  mongo-shard1-a: #Lưu trữ (Chính)	Ghi/Đọc dữ liệu thật
+    image: mongo:7.0
     container_name: mongo-shard1-a
     command: mongod --shardsvr --replSet rs-shard1 --port 27018 --bind_ip_all
     ports:
@@ -128,8 +128,8 @@ services:
     networks:
       - chat-network
 
-  mongo-shard1-b:
-    image: mongo:latest
+  mongo-shard1-b: # mongo-shard1-b	Lưu trữ (Phụ)	Backup dữ liệu
+    image: mongo:7.0
     container_name: mongo-shard1-b
     command: mongod --shardsvr --replSet rs-shard1 --port 27018 --bind_ip_all
     volumes:
@@ -137,15 +137,15 @@ services:
     networks:
       - chat-network
 
-  mongo-shard1-arbiter:
-    image: mongo:latest
+  mongo-shard1-arbiter: #mongo-shard1-arbiter	Trọng tài	Bầu cử (Không lưu data)
+    image: mongo:7.0
     container_name: mongo-shard1-arbiter
     command: mongod --shardsvr --replSet rs-shard1 --port 27018 --bind_ip_all
     networks:
       - chat-network
 
-  mongo-router:
-    image: mongo:latest
+  mongo-router: #Cổng vào	Nhận yêu cầu từ Java
+    image: mongo:7.0
     container_name: mongo-router
     command: mongos --configdb rs-config/mongo-config:27019 --bind_ip_all --port 27017
     ports:
